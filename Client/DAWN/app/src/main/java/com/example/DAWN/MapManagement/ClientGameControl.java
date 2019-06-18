@@ -23,6 +23,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.DAWN.CommonService.ClientComContext;
@@ -309,7 +310,7 @@ public class ClientGameControl extends AppCompatActivity {
     }
     public void Attack(){
         Attackable = false;
-        int damage = 20;
+        int damage = myrole.attack;
         if (myrole.weapon!=null){
             damage += 10;
         }
@@ -321,65 +322,65 @@ public class ClientGameControl extends AppCompatActivity {
     }
 
     public void Lmove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,0,"+ speed);
     }
     public void Rmove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,1,"+ speed);
     }
     public void Umove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,2,"+ speed);
     }
     public void Dmove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,3,"+ speed);
     }
     public void DLmove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,4,"+ speed);
     }
     public void DRmove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,5,"+ speed);
     }
     public void ULmove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,6,"+ speed);
     }
     public void URmove(){
-        int speed = 1;
+        int speed = myrole.speed;
         if(myrole.shoe!=null){
-            speed += 1;
+            speed += 2;
         }
         if (Attackable)
             new AsyncConTCP().execute("mov,7,"+ speed);
@@ -603,14 +604,16 @@ public class ClientGameControl extends AppCompatActivity {
         void update() throws InterruptedException {
             updateMapLocation ();
             Role_simple r;
+            int m;
             for (int i=0;i<map.livingrole.size();i++) {
                 r = map.livingrole.get(i);
                 if (!Data.playerLocation.containsKey(String.valueOf (r.name))) {
                     map.livingrole.remove(r);
                     continue;
                 }
+                m = r.lifevalue;
                 r.lifevalue = Objects.requireNonNull (Data.playerLocation.get (String.valueOf (r.name)))[1];
-                check_alive(r);
+                check_alive(r,m);
                 r.location[0] = Objects.requireNonNull (Data.playerLocation.get (String.valueOf (r.name)))[2];
                 r.location[1] = Objects.requireNonNull (Data.playerLocation.get (String.valueOf (r.name)))[3];
                 r.direction = Objects.requireNonNull (Data.playerLocation.get (String.valueOf (r.name)))[4];
@@ -763,7 +766,7 @@ public class ClientGameControl extends AppCompatActivity {
 
                             if (exp_order!=-1){
                                 c.drawBitmap(exp_pic[0][exp_order/3+(exp_order/12)*(7-2*exp_order/3)],center_location[0]+100,center_location[1],p);
-                                exp_order=(exp_order >= 24 )?  (-1) : (r.attack_mov + 1);
+                                exp_order=(exp_order >= 24 )?  (-1) : (exp_order + 1);
                             }
 
                             if (r.attack_mov!=-1) {
@@ -836,50 +839,58 @@ public class ClientGameControl extends AppCompatActivity {
         }
     }
 
-    void check_alive(Role_simple r) throws InterruptedException {
+    void check_alive(Role_simple r, int m) throws InterruptedException {
         if (r.id != myrole.id && r.lifevalue > 0){
             Data.chickenDinner = false;
         }
-        if ((r.id == myrole.id && r.lifevalue <= 0) || (r.id == myrole.id && Data.chickenDinner)) {
-            isend=true;
-            TimeUnit.MILLISECONDS.sleep (1000);
+        if (r.id == myrole.id) {
+            if ((r.lifevalue <= 0) || (Data.chickenDinner)) {
+                isend = true;
+                TimeUnit.MILLISECONDS.sleep(1000);
 
-            while(Data.killBoard==null){
-                TimeUnit.MILLISECONDS.sleep (1000);
-                new AsyncConUDP ().execute ("kill_res!");
-            }
-            System.out.println ("Here is kill-board: " + Data.killBoard.toString ());
+                while (Data.killBoard == null) {
+                    TimeUnit.MILLISECONDS.sleep(1000);
+                    new AsyncConUDP().execute("kill_res!");
+                }
+                System.out.println("Here is kill-board: " + Data.killBoard.toString());
 
-            Intent it_res = new Intent (this, ShowRes.class);    //切换User Activity至Login Activity
-            Bundle bundle=new Bundle();
-            bundle.putString("name", String.valueOf (myrole.name));
-            bundle.putInt("roleID",myrole.id);
-            int rank = 1;
-            for (int i = 0; i < Data.killBoard.size (); i++){
-                if (Data.killBoard.get (Data.killBoard.size ()-i-1)[1] == myrole.name){
-                    rank = i+2;
-                    break;
+                Intent it_res = new Intent(this, ShowRes.class);    //切换User Activity至Login Activity
+                Bundle bundle = new Bundle();
+                bundle.putString("name", String.valueOf(myrole.name));
+                bundle.putInt("roleID", myrole.id);
+                int rank = 1;
+                for (int i = 0; i < Data.killBoard.size(); i++) {
+                    if (Data.killBoard.get(Data.killBoard.size() - i - 1)[1] == myrole.name) {
+                        rank = i + 2;
+                        break;
+                    }
                 }
-            }
-            bundle.putInt("rank",rank);
-            int killingCnt = 0;
-            for (int i = 0; i < Data.killBoard.size (); i++){
-                if (Data.killBoard.get (i)[0] == myrole.name){
-                    killingCnt += 1;
+                bundle.putInt("rank", rank);
+                int killingCnt = 0;
+                for (int i = 0; i < Data.killBoard.size(); i++) {
+                    if (Data.killBoard.get(i)[0] == myrole.name) {
+                        killingCnt += 1;
+                    }
                 }
-            }
-            bundle.putInt("killing",killingCnt);
-            for (int i = 0; i < Data.killBoard.size (); i++){
-                if (Data.killBoard.get (i)[1] == myrole.name){
-                    bundle.putString("killedby", String.valueOf (Data.killBoard.get (i)[0]));//也可以传被杀的id
-                    break;
-                }else{
-                    bundle.putString("killedby", "Nobody");//也可以传被杀的id
+                bundle.putInt("killing", killingCnt);
+                for (int i = 0; i < Data.killBoard.size(); i++) {
+                    if (Data.killBoard.get(i)[1] == myrole.name) {
+                        bundle.putString("killedby", String.valueOf(Data.killBoard.get(i)[0]));//也可以传被杀的id
+                        break;
+                    } else {
+                        bundle.putString("killedby", "Nobody");//也可以传被杀的id
+                    }
                 }
+                it_res.putExtras(bundle);
+                startActivity(it_res);
             }
-            it_res.putExtras(bundle);
-            startActivity (it_res);
+            if (m!=r.lifevalue){
+                HP_value.setText(String.valueOf(r.lifevalue));
 
+                Matrix matrix=new Matrix();
+                matrix.postScale(((float)r.lifevalue/100),1);
+                HPbar.setImageBitmap(Bitmap.createBitmap(blood, 0, 0,blood.getWidth(),blood.getHeight(),matrix,true));
+            }
         }
         if (r.id == myrole.id) Data.chickenDinner = true;
     }
